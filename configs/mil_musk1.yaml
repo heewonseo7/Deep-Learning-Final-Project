@@ -1,0 +1,26 @@
+# Hyper-parameters for MUSK1 MIL experiment (Table 1 in the paper)
+dataset: musk1
+data_dir: data/mil
+
+model:
+  input_dim: 166        # MUSK1 feature dimension
+  hidden_dim: 256
+  beta: 1.0
+  num_heads: 1
+  dropout: 0.25
+
+training:
+  epochs: 100
+  batch_size: 1         # one bag per step (standard MIL protocol)
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  optimizer: adam
+  scheduler: cosine
+
+cross_validation:
+  folds: 10
+  seed: 42
+
+logging:
+  log_every: 10
+  save_dir: outputs/mil_musk1

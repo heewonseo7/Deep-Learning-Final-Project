@@ -1,0 +1,28 @@
+# Hyper-parameters for MNIST-Bags MIL experiment
+dataset: mnist_bags
+data_dir: data/mnist
+
+model:
+  hidden_dim: 128
+  beta: 1.0
+  num_heads: 1
+  dropout: 0.0
+
+bags:
+  num_bags_train: 200
+  num_bags_test: 50
+  bag_size: 10
+  target_digit: 9
+  pos_fraction: 0.5
+
+training:
+  epochs: 50
+  batch_size: 32
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  optimizer: adam
+  scheduler: cosine
+
+logging:
+  log_every: 5
+  save_dir: outputs/mil_mnist
