@@ -1,4 +1,4 @@
-"""Modern Hopfield Networks package — exposes Energy, Attention, Pooling, and Network layers."""
+"""Modern Hopfield Networks — core module."""
 
 from hopfield.energy import hopfield_energy
 from hopfield.attention import hopfield_update

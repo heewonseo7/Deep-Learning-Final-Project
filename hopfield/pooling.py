@@ -1,46 +1,40 @@
-"""HopfieldPooling: Hopfield layer with a single learned static query for set aggregation."""
+"""HopfieldPooling: single learned static query for set aggregation."""
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
+from hopfield.attention import hopfield_update
+
 
 class HopfieldPooling(nn.Module):
-    """Replace an attention query with a single trainable prototype vector.
+    """Hopfield layer with one learned static query.
 
-    Useful for multiple-instance learning where the bag must be collapsed to
-    a fixed-size representation regardless of the number of instances.
+    Useful for multiple-instance learning: collapses a variable-size set
+    of stored patterns to a fixed-size representation by retrieving the
+    attractor closest to the learned query.
 
     Args:
-        input_size:  Dimension of input (key/value) features.
-        hidden_size: Dimension of the Hopfield association space.
-        output_size: Dimension of the pooled output.
-        beta:        Inverse temperature (scaling factor before softmax).
-        num_heads:   Number of parallel association heads.
+        d:        Pattern / query dimensionality.
+        beta:     Initial inverse temperature (learnable).
+        num_iter: Number of Hopfield update steps.
     """
 
-    def __init__(
-        self,
-        input_size: int,
-        hidden_size: int,
-        output_size: int,
-        beta: float = 1.0,
-        num_heads: int = 1,
-    ) -> None:
+    def __init__(self, d: int, beta: float = 1.0, num_iter: int = 1) -> None:
         super().__init__()
-        # TODO: define learned static query, key/value projections, beta parameter
-        pass
+        self.num_iter = num_iter
+        self.query = nn.Parameter(torch.randn(d))
+        self.beta = nn.Parameter(torch.tensor(float(beta)))
 
-    def forward(self, X: Tensor, mask: Tensor | None = None) -> Tensor:
-        """Pool a set X ∈ ℝ^{B×N×d} to a fixed representation ℝ^{B×output_size}.
+    def forward(self, X: Tensor) -> Tensor:
+        """Retrieve from stored patterns using the learned static query.
 
         Args:
-            X:    Input bag of instances (batch, instances, input_size).
-            mask: Optional boolean mask (batch, instances) — True = keep.
+            X: Stored patterns (d, N)
 
         Returns:
-            Pooled representation (batch, output_size).
+            Retrieved pattern (d,)
         """
-        # TODO: project X to keys/values, expand static query to batch dim,
-        #       run Hopfield update, project output
-        pass
+        return hopfield_update(
+            self.query, X, beta=self.beta.item(), num_iter=self.num_iter
+        )

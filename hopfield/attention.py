@@ -1,36 +1,39 @@
-"""Core Hopfield update rule: ξ_new = X · softmax(β · Xᵀ · ξ)."""
+"""Core Hopfield update rule: xi_new = X @ softmax(beta * X^T @ xi)."""
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor
 
 
-def hopfield_update(xi: Tensor, X: Tensor, beta: float = 1.0) -> Tensor:
-    """Run one synchronous update step toward the nearest stored pattern.
+def hopfield_update(
+    xi: Tensor,
+    X: Tensor,
+    beta: float = 1.0,
+    num_iter: int = 1,
+    normalize: bool = False,
+) -> Tensor:
+    """Run synchronous Hopfield update steps.
 
     Args:
-        xi:   Current query state  (B, d) or (d,)
-        X:    Stored patterns      (N, d)
-        beta: Inverse temperature
+        xi:        Query state (d,) or (B, d)
+        X:         Stored patterns (d, N) — patterns as columns
+        beta:      Inverse temperature
+        num_iter:  Number of update steps
+        normalize: If True, divide X columns by sqrt(d) before each step
 
     Returns:
-        Updated state of the same shape as xi.
+        Updated state, same shape as xi.
     """
-    # TODO: compute attention weights = softmax(beta * X @ xi.T) then weighted sum
-    pass
+    squeeze = xi.dim() == 1
+    if squeeze:
+        xi = xi.unsqueeze(0)  # (1, d)
 
+    if normalize:
+        X = X / (X.shape[0] ** 0.5)
 
-def hopfield_retrieve(xi: Tensor, X: Tensor, beta: float = 1.0, steps: int = 1) -> Tensor:
-    """Iterate update rule for `steps` synchronous steps.
+    for _ in range(num_iter):
+        logits = beta * (xi @ X)               # (B, N)
+        weights = F.softmax(logits, dim=-1)    # (B, N)
+        xi = weights @ X.T                    # (B, d)
 
-    Args:
-        xi:    Initial query state (B, d)
-        X:     Stored patterns     (N, d)
-        beta:  Inverse temperature
-        steps: Number of update iterations
-
-    Returns:
-        Retrieved pattern after convergence.
-    """
-    # TODO: loop hopfield_update `steps` times and return final state
-    pass
+    return xi.squeeze(0) if squeeze else xi
