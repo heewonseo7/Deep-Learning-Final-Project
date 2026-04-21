@@ -20,9 +20,13 @@ class AttentionMIL(nn.Module):
 
     def __init__(self, input_dim: int, hidden_dim: int = 128, dropout: float = 0.0) -> None:
         super().__init__()
-        # TODO: attention network: linear(input_dim → hidden_dim) → tanh → linear(hidden_dim → 1)
-        # TODO: classifier head: linear(input_dim → 1)
-        pass
+        self.attention = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, 1),
+        )
+        self.dropout = nn.Dropout(dropout)
+        self.classifier = nn.Linear(input_dim, 1)
 
     def forward(self, bags: Tensor, mask: Tensor | None = None) -> Tensor:
         """Classify bags.
@@ -34,5 +38,10 @@ class AttentionMIL(nn.Module):
         Returns:
             Logits (B, 1).
         """
-        # TODO: compute attention scores, mask, softmax, weighted sum, classify
-        pass
+        scores = self.attention(bags).squeeze(-1)  # (B, N)
+        if mask is not None:
+            scores = scores.masked_fill(~mask, float("-inf"))
+        weights = F.softmax(scores, dim=-1)        # (B, N)
+        weights = self.dropout(weights)
+        pooled = (weights.unsqueeze(-1) * bags).sum(dim=1)  # (B, input_dim)
+        return self.classifier(pooled)             # (B, 1)

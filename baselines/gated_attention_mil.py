@@ -20,9 +20,11 @@ class GatedAttentionMIL(nn.Module):
 
     def __init__(self, input_dim: int, hidden_dim: int = 128, dropout: float = 0.0) -> None:
         super().__init__()
-        # TODO: attention path: linear → tanh; gate path: linear → sigmoid;
-        #       combine element-wise, project to scalar score; classifier head
-        pass
+        self.attention_v = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.Tanh())
+        self.attention_u = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.Sigmoid())
+        self.attention_w = nn.Linear(hidden_dim, 1)
+        self.dropout = nn.Dropout(dropout)
+        self.classifier = nn.Linear(input_dim, 1)
 
     def forward(self, bags: Tensor, mask: Tensor | None = None) -> Tensor:
         """Classify bags.
@@ -34,5 +36,12 @@ class GatedAttentionMIL(nn.Module):
         Returns:
             Logits (B, 1).
         """
-        # TODO: compute tanh and sigmoid gate, multiply, score, softmax, pool, classify
-        pass
+        v = self.attention_v(bags)                          # (B, N, hidden_dim)
+        u = self.attention_u(bags)                          # (B, N, hidden_dim)
+        scores = self.attention_w(v * u).squeeze(-1)        # (B, N)
+        if mask is not None:
+            scores = scores.masked_fill(~mask, float("-inf"))
+        weights = F.softmax(scores, dim=-1)                 # (B, N)
+        weights = self.dropout(weights)
+        pooled = (weights.unsqueeze(-1) * bags).sum(dim=1)  # (B, input_dim)
+        return self.classifier(pooled)                      # (B, 1)
