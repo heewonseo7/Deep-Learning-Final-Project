@@ -1,24 +1,16 @@
-"""MIL classifier built on HopfieldPooling for MUSK / Fox / Tiger / Elephant benchmarks."""
+"""MIL classifier using Hopfield-style attention pooling."""
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
-
-from hopfield.pooling import HopfieldPooling
 
 
 class HopfieldMIL(nn.Module):
-    """Multiple-instance learning classifier using Hopfield pooling.
+    """Multiple-instance learning classifier with Hopfield attention pooling.
 
-    Architecture:
-        feature_encoder → HopfieldPooling → MLP classifier
-
-    Args:
-        input_dim:   Raw instance feature dimension.
-        hidden_dim:  Hopfield association space dimension.
-        beta:        Inverse temperature for the pooling layer.
-        num_heads:   Number of Hopfield heads.
-        dropout:     Dropout rate in the classifier head.
+    Uses a learned static query + beta-scaled softmax to aggregate instance
+    features, then classifies the pooled representation.
     """
 
     def __init__(
@@ -30,18 +22,21 @@ class HopfieldMIL(nn.Module):
         dropout: float = 0.25,
     ) -> None:
         super().__init__()
-        # TODO: build feature encoder (linear + ReLU), HopfieldPooling, binary classifier head
-        pass
+        self.encoder = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.ReLU())
+        self.query = nn.Parameter(torch.randn(hidden_dim))
+        self.beta = nn.Parameter(torch.tensor(beta))
+        self.classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(hidden_dim, 1))
 
     def forward(self, bags: Tensor, mask: Tensor | None = None) -> Tensor:
-        """Classify bags.
+        B, N, _ = bags.shape
+        instances = self.encoder(bags.view(B * N, -1)).view(B, N, -1)  # (B, N, h)
 
-        Args:
-            bags: (B, N, input_dim)
-            mask: (B, N) bool — True = valid instance
+        # Beta-scaled softmax attention with learned static query
+        q = self.query                                 # (h,)
+        scores = self.beta * (instances @ q)           # (B, N)
+        if mask is not None:
+            scores = scores.masked_fill(~mask, float("-inf"))
+        weights = F.softmax(scores, dim=-1)            # (B, N)
+        pooled = (weights.unsqueeze(-1) * instances).sum(dim=1)  # (B, h)
 
-        Returns:
-            Logits (B, 1).
-        """
-        # TODO: encode instances, pool with Hopfield, classify
-        pass
+        return self.classifier(pooled)                 # (B, 1)

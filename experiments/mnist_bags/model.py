@@ -1,41 +1,27 @@
-"""CNN + HopfieldPooling classifier for the MNIST-Bags MIL benchmark."""
+"""CNN + Hopfield attention pooling for MNIST-Bags MIL."""
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
-
-from hopfield.pooling import HopfieldPooling
 
 
 class MNISTBagClassifier(nn.Module):
-    """Encode each MNIST instance with a small CNN, then pool with HopfieldPooling.
-
-    Args:
-        hidden_dim:  Hopfield association space dimension.
-        beta:        Inverse temperature for pooling.
-        num_heads:   Number of Hopfield pooling heads.
-        dropout:     Dropout in classifier head.
-    """
-
-    def __init__(
-        self,
-        hidden_dim: int = 128,
-        beta: float = 1.0,
-        num_heads: int = 1,
-        dropout: float = 0.0,
-    ) -> None:
+    def __init__(self, hidden_dim=128, beta=1.0, num_heads=1, dropout=0.0):
         super().__init__()
-        # TODO: small CNN feature extractor (conv → pool → flatten), HopfieldPooling, classifier
-        pass
+        self.cnn = nn.Sequential(
+            nn.Conv2d(1, 20, 5), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(20, 50, 5), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Flatten(), nn.Linear(800, hidden_dim), nn.ReLU(),
+        )
+        self.query = nn.Parameter(torch.randn(hidden_dim))
+        self.beta = nn.Parameter(torch.tensor(float(beta)))
+        self.classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(hidden_dim, 1))
 
     def forward(self, bags: Tensor) -> Tensor:
-        """Classify bags of MNIST images.
-
-        Args:
-            bags: (B, N, 1, 28, 28)
-
-        Returns:
-            Logits (B, 1).
-        """
-        # TODO: reshape to (B*N, 1, 28, 28), encode, reshape back, pool, classify
-        pass
+        B, N, C, H, W = bags.shape
+        features = self.cnn(bags.view(B * N, C, H, W)).view(B, N, -1)
+        scores = self.beta * (features @ self.query)   # (B, N)
+        weights = F.softmax(scores, dim=-1)
+        pooled = (weights.unsqueeze(-1) * features).sum(dim=1)
+        return self.classifier(pooled)
