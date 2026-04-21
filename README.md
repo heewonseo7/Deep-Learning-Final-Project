@@ -15,61 +15,64 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Clone and enter the repo
 git clone <repo-url>
-cd modern-hopfield
+cd Deep-Learning-Final-Project
 
 # 3. Install all dependencies (creates .venv automatically)
-uv sync
+uv sync --dev
 
-# 4. Verify PyTorch is available
-uv run python -c "import torch; print(torch.__version__)"
+# 4. Verify the install
+uv run pytest tests/
 ```
+
+## Prepare data
+
+```bash
+# Download MUSK1/2 from UCI and generate synthetic Fox/Tiger/Elephant stand-ins
+uv run python scripts/download_mil.py
+
+# MNIST is downloaded automatically on first run — no manual step needed
+```
+
+Fox, Tiger, and Elephant are not freely redistributable. Replace the synthetic `.mat` files in
+`data/mil/` with the real ones when available; the loader accepts them as-is.
 
 ## Running experiments
 
 ```bash
-# MIL benchmark (MUSK1)
+# β-sweep (saves plots to results/beta_sweep/)
+uv run python -m experiments.beta_sweep.experiment
+
+# MIL benchmark — MUSK1, 10-fold CV
 uv run python -m experiments.mil.train --config configs/mil_musk1.yaml
 
-# MIL benchmark (MNIST-Bags)
+# MIL benchmark — MNIST-Bags
 uv run python -m experiments.mnist_bags.train --config configs/mil_mnist.yaml
-
-# beta sweep (saves plots to outputs/beta_sweep/)
-uv run python -m experiments.beta_sweep.experiment
-uv run python -m experiments.beta_sweep.plot
 ```
-
-Plots and results CSVs are written automatically to `outputs/` (gitignored; only `outputs/.gitkeep` is tracked).
 
 ## Repository structure
 
 ```
-modern-hopfield/
+.
 ├── hopfield/
-│   ├── __init__.py
-│   ├── energy.py        # log-sum-exp energy function E(xi)
-│   ├── attention.py     # update rule: xi_new = X·softmax(beta·X^T·xi)
-│   ├── pooling.py       # HopfieldPooling with learned static query
-│   └── network.py       # full Hopfield layer with Q/K/V projections
+│   ├── energy.py        # log-sum-exp energy E(ξ) — Theorem 2 Lyapunov function
+│   ├── attention.py     # update rule: ξ_new = X·softmax(β·Xᵀ·ξ)
+│   ├── pooling.py       # HopfieldPooling — learned static query for set aggregation
+│   └── network.py       # HopfieldLayer — full Q/K/V drop-in attention replacement
 ├── experiments/
-│   ├── mil/
-│   │   ├── dataset.py   # MUSK1/2, Fox, Tiger, Elephant loaders
-│   │   ├── model.py     # MIL classifier using HopfieldPooling
-│   │   └── train.py     # 10-fold cross-validation loop
-│   ├── beta_sweep/
-│   │   ├── experiment.py
-│   │   └── plot.py
-│   └── mnist_bags/
-│       ├── dataset.py
-│       ├── model.py
-│       └── train.py
+│   ├── beta_sweep/      # retrieval error vs β; storage capacity curve
+│   ├── mil/             # MUSK1/2, Fox, Tiger, Elephant — 10-fold CV
+│   └── mnist_bags/      # CNN + HopfieldPooling on MNIST-Bags MIL benchmark
 ├── baselines/
-│   ├── attention_mil.py        # Ilse et al. (2018) soft-attention
-│   └── gated_attention_mil.py  # Ilse et al. (2018) gated attention
-├── outputs/                    # gitignored — plots + results CSVs land here
+│   ├── attention_mil.py        # Ilse et al. (2018) soft-attention baseline
+│   └── gated_attention_mil.py  # Ilse et al. (2018) gated-attention baseline
+├── scripts/
+│   └── download_mil.py  # fetches MUSK1/2 from UCI; generates synthetic Corel stand-ins
 ├── configs/
 │   ├── mil_musk1.yaml
 │   └── mil_mnist.yaml
-└── README.md
+├── tests/
+│   └── test_hopfield_core.py
+└── results/             # gitignored — plots and result CSVs land here
 ```
 
 ## Reference
