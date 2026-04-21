@@ -1,0 +1,10 @@
+d_model: 128
+num_classes: 10
+num_heads: 4
+num_layers: 2
+dropout: 0.1
+epochs: 50
+lr: 1.0e-3
+few_shot_k: [5, 10, 20, 50, 100, 500]
+seeds: [0, 1, 2]
+ood_dataset: fashion_mnist

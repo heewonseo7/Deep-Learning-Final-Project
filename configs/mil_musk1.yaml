@@ -23,4 +23,4 @@ cross_validation:
 
 logging:
   log_every: 10
-  save_dir: outputs/mil_musk1
+  save_dir: results/mil_musk1

@@ -25,4 +25,4 @@ training:
 
 logging:
   log_every: 5
-  save_dir: outputs/mil_mnist
+  save_dir: results/mil_mnist
