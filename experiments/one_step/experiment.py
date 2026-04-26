@@ -9,13 +9,13 @@ from tqdm import tqdm
 from hopfield.attention import hopfield_update
 from experiments.runner import save_results
 
-N = 50
+N = 500
 D = 64
 BETA = 10.0
 TRIALS = 100
 
 ITER_VALUES = [1, 2, 3, 5, 10, 20]
-SIGMA_VALUES = [0.05, 0.1, 0.2, 0.3, 0.5]
+SIGMA_VALUES = [0.1, 0.3, 0.5, 0.8, 1.2]
 
 
 def run_grid(seed: int) -> np.ndarray:

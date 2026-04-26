@@ -21,8 +21,8 @@ def main(seed: int = 0) -> None:
     acc_hop = data["acc_hopfield"].tolist()
     std_std = data["std_standard"].tolist()
     std_hop = data["std_hopfield"].tolist()
-    ent_std = float(data["ood_entropy_standard"])
-    ent_hop = float(data["ood_entropy_hopfield"])
+    ent_std = float(data["ood_entropy_standard"].flat[0])
+    ent_hop = float(data["ood_entropy_hopfield"].flat[0])
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 

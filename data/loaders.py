@@ -35,7 +35,7 @@ def get_mnist(
     if few_shot_k is not None and train:
         rng = torch.Generator()
         rng.manual_seed(seed)
-        targets = torch.tensor(ds.targets)
+        targets = torch.as_tensor(ds.targets)
         indices = []
         for c in range(10):
             class_idx = (targets == c).nonzero(as_tuple=True)[0]

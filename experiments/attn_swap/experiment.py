@@ -85,9 +85,9 @@ def ood_entropy(use_hopfield: bool, k: int, seed: int, device: torch.device) -> 
         patcher.train(); model.train()
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
             logits = model(patcher(x))
             F.cross_entropy(logits, y).backward()
-            optimizer.zero_grad()
             optimizer.step()
 
     fmnist_loader = get_fashion_mnist(batch_size=256)
