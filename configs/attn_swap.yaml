@@ -8,3 +8,5 @@ lr: 1.0e-3
 few_shot_k: [5, 10, 20, 50, 100, 500]
 seeds: [0, 1, 2]
 ood_dataset: fashion_mnist
+# Shots per class when training the models used only for OOD entropy on Fashion-MNIST
+ood_few_shot_k: 100

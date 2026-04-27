@@ -8,7 +8,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 RESULTS_DIR = Path("results")
-D_CLASSICAL = 100
+
+
+def _cfg_int(data, key: str, default: int) -> int:
+    k = f"cfg_{key}"
+    if k not in data.files:
+        return default
+    return int(float(np.asarray(data[k]).item()))
 
 
 def main(seed: int = 0) -> None:
@@ -17,14 +23,27 @@ def main(seed: int = 0) -> None:
         raise FileNotFoundError(f"Run experiment first: {path}")
     data = np.load(path)
 
+    d_modern = _cfg_int(data, "d_modern", 64)
+    d_classical = _cfg_int(data, "d_classical", 100)
+
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    ax.plot(data["N_modern"], data["acc_modern"], "b-o", label="Modern Hopfield (d=64)")
-    ax.plot(data["N_classical"], data["acc_classical"], "r-s", label="Classical Hopfield (d=100)")
+    ax.plot(
+        data["N_modern"],
+        data["acc_modern"],
+        "b-o",
+        label=f"Modern Hopfield (d={d_modern})",
+    )
+    ax.plot(
+        data["N_classical"],
+        data["acc_classical"],
+        "r-s",
+        label=f"Classical Hopfield (d={d_classical})",
+    )
 
-    classical_limit = 0.138 * D_CLASSICAL
+    classical_limit = 0.138 * d_classical
     ax.axvline(classical_limit, color="red", linestyle="--", alpha=0.7,
-               label=f"Classical limit (0.14×{D_CLASSICAL}={classical_limit:.0f})")
+               label=f"Classical limit (0.14×{d_classical}={classical_limit:.0f})")
 
     ax.set_xscale("log")
     ax.set_xlabel("Number of stored patterns", fontsize=12)
