@@ -7,6 +7,8 @@ attention in practical architectures. This repo implements the core Hopfield lay
 `HopfieldPooling` module, and reproduces the multiple-instance learning (MIL) experiments on
 MUSK1/2, Fox, Tiger, Elephant, and MNIST-Bags benchmarks reported in Tables 1 & 2 of the paper.
 
+Poster: https://drive.google.com/file/d/1W1Ozu14fNCjdqD7l6M7bDge2i2tTaisC/view?usp=sharing
+
 ## Setup
 
 ```bash
